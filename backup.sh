@@ -52,7 +52,7 @@ copy_s3 () {
 
   echo "Uploading ${SRC_FILE} -> ${DEST_FILE} on S3..."
 
-  if [ "${$S3_PREFIX}" == "**None**" ]; then
+  if [ "${S3_PREFIX}" == "**None**" ]; then
     cat $SRC_FILE | aws $AWS_ARGS s3 cp - s3://$S3_BUCKET/$DEST_FILE
   else
     cat $SRC_FILE | aws $AWS_ARGS s3 cp - s3://$S3_BUCKET/$S3_PREFIX/$DEST_FILE
