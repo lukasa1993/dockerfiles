@@ -37,9 +37,9 @@ if [ "${S3_IAMROLE}" != "true" ]; then
   export AWS_DEFAULT_REGION=$S3_REGION
 fi
 
+# corresponding moment format YYYYMMDDHHmmss
 MYSQL_HOST_OPTS="-h $MYSQL_HOST -P $MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD"
-DUMP_START_TIME=$(date +"%Y-%m-%dT%H%M%SZ")
-
+DUMP_START_TIME=$(date + "%Y%m%d%H%M%S")
 copy_s3 () {
   SRC_FILE=$1
   DEST_FILE=$2
@@ -50,7 +50,7 @@ copy_s3 () {
     AWS_ARGS="--endpoint-url ${S3_ENDPOINT}"
   fi
 
-  echo "Uploading ${DEST_FILE} on S3..."
+  echo "Uploading ${SRC_FILE} -> ${DEST_FILE} on S3..."
 
   cat $SRC_FILE | aws $AWS_ARGS s3 cp - s3://$S3_BUCKET/$S3_PREFIX/$DEST_FILE
 
@@ -91,7 +91,7 @@ else
   mysqldump $MYSQL_HOST_OPTS $MYSQLDUMP_OPTIONS $MYSQLDUMP_DATABASE | gzip > $DUMP_FILE
 
   if [ $? == 0 ]; then
-    S3_FILE="${DUMP_START_TIME}.dump.sql.gz"
+    S3_FILE="${db_database}_${DUMP_START_TIME}.sql.gz"
 
     copy_s3 $DUMP_FILE $S3_FILE
   else
