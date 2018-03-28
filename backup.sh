@@ -39,7 +39,7 @@ fi
 
 # corresponding moment format YYYYMMDDHHmmss
 MYSQL_HOST_OPTS="-h $MYSQL_HOST -P $MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD"
-DUMP_START_TIME=$(date + "%Y%m%d%H%M%S")
+DUMP_START_TIME=$(date +"%Y%m%d%H%M%S")
 copy_s3 () {
   SRC_FILE=$1
   DEST_FILE=$2
@@ -52,7 +52,11 @@ copy_s3 () {
 
   echo "Uploading ${SRC_FILE} -> ${DEST_FILE} on S3..."
 
-  cat $SRC_FILE | aws $AWS_ARGS s3 cp - s3://$S3_BUCKET/$S3_PREFIX/$DEST_FILE
+  if [ "${$S3_PREFIX}" == "**None**" ]; then
+    cat $SRC_FILE | aws $AWS_ARGS s3 cp - s3://$S3_BUCKET/$DEST_FILE
+  else
+    cat $SRC_FILE | aws $AWS_ARGS s3 cp - s3://$S3_BUCKET/$S3_PREFIX/$DEST_FILE
+  fi
 
   if [ $? != 0 ]; then
     >&2 echo "Error uploading ${DEST_FILE} on S3"
