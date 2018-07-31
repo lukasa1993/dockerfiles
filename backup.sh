@@ -64,43 +64,18 @@ copy_s3 () {
 
   rm $SRC_FILE
 }
-# Multi file: yes
-if [ ! -z "$(echo $MULTI_FILES | grep -i -E "(yes|true|1)")" ]; then
-  if [ "${MYSQLDUMP_DATABASE}" == "--all-databases" ]; then
-    DATABASES=`mysql $MYSQL_HOST_OPTS -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema|mysql|sys|innodb)"`
-  else
-    DATABASES=$MYSQLDUMP_DATABASE
-  fi
 
-  for DB in $DATABASES; do
-    echo "Creating individual dump of ${DB} from ${MYSQL_HOST}..."
+echo "Creating dump for ${MYSQLDUMP_DATABASE} from ${MYSQL_HOST}..."
 
-    DUMP_FILE="/tmp/${DB}.sql.gz"
+DUMP_FILE="/tmp/dump.sql.gz"
+mysqldump $MYSQL_HOST_OPTS $MYSQLDUMP_OPTIONS $MYSQLDUMP_DATABASE | gzip > $DUMP_FILE
 
-    mysqldump $MYSQL_HOST_OPTS $MYSQLDUMP_OPTIONS --databases $DB | gzip > $DUMP_FILE
+if [ $? == 0 ]; then
+S3_FILE="${db_database}_${DUMP_START_TIME}.sql.gz"
 
-    if [ $? == 0 ]; then
-      S3_FILE="${DUMP_START_TIME}.${DB}.sql.gz"
-
-      copy_s3 $DUMP_FILE $S3_FILE
-    else
-      >&2 echo "Error creating dump of ${DB}"
-    fi
-  done
-# Multi file: no
+copy_s3 $DUMP_FILE $S3_FILE
 else
-  echo "Creating dump for ${MYSQLDUMP_DATABASE} from ${MYSQL_HOST}..."
-
-  DUMP_FILE="/tmp/dump.sql.gz"
-  mysqldump $MYSQL_HOST_OPTS $MYSQLDUMP_OPTIONS $MYSQLDUMP_DATABASE | gzip > $DUMP_FILE
-
-  if [ $? == 0 ]; then
-    S3_FILE="${db_database}_${DUMP_START_TIME}.sql.gz"
-
-    copy_s3 $DUMP_FILE $S3_FILE
-  else
-    >&2 echo "Error creating dump of all databases"
-  fi
+>&2 echo "Error creating dump of all databases"
 fi
 
 echo "SQL backup finished"
